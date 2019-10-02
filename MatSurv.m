@@ -1,7 +1,3 @@
-% Modification of Anders Berglund's excellent MatSurv function to accept
-% more than two groups. Also implemented custom ordering of groups. Added
-% option for legend to be off (default: on);
-% -Patrick Leo, CCIPD
 function [varargout] = MatSurv(TimeVar, EventVar, GroupVar, varargin)
 % USAGE:
 %   MatSurv(TimeVar, EventVar, GroupVar,'param', value, ...) creates a Kaplan-Meier plot,
@@ -458,7 +454,7 @@ else % Creat KM-Plot
         if options.DispHR
             if ~options.Use_HR_MH
                 if options.InvHR
-                    if(length(stats.HR_logrank_Inv) > 2)
+                    if(length(stats.HR_logrank_Inv) >= 2)
                     for(k = 1:length(stats.HR_logrank_Inv))
                         txt_str(k+1) = {sprintf('HR %s/%s = %.2f (%.2f - %.2f)',DATA.GROUPS(k).GroupName{1}(1),DATA.GROUPS(k+1).GroupName{1}(1), stats.HR_logrank_Inv(k), stats.HR_95_CI_logrank_Inv(k,1), stats.HR_95_CI_logrank_Inv(k,2))};
                     end
