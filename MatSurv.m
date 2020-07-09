@@ -196,6 +196,9 @@ function [varargout] = MatSurv(TimeVar, EventVar, GroupVar, varargin)
 % * 'PvalFontSize': Scalar describing p-value font size change compared
 %   to base font size (Default: 0)
 %
+% * 'CensorMarks': Logical for whether censor marks should be printed
+% (Default: true)
+%
 % Risk table plot options
 % * 'RT_FontSize': Scalar describing Risk Table font size change compared
 %   to base font size (Default: 0)
@@ -386,7 +389,7 @@ else % Creat KM-Plot
                 line(axh_KM,[0 stats.MedianSurvivalTime(i)], [0.5 0.5],'LineStyle','--','Linewidth',1.5,'Color','k');
             end
         end
-        if ~isempty(DATA.GROUPS(i).Censored_Points)
+        if ~isempty(DATA.GROUPS(i).Censored_Points) && options.CensorMarks
             % Draw marks for censored points
             line(axh_KM,[DATA.GROUPS(i).Censored_Points(:,1)'; DATA.GROUPS(i).Censored_Points(:,1)'],...
                 [DATA.GROUPS(i).Censored_Points(:,2)'-options.CensorLineLength ; DATA.GROUPS(i).Censored_Points(:,2)'+options.CensorLineLength],...
@@ -450,37 +453,52 @@ else % Creat KM-Plot
     axh_KM.LineWidth = 1.5;
     
     if options.DispP
-        txt_str(1) = {sprintf('p = %.2g',p)};
-        if options.DispHR
-            if ~options.Use_HR_MH
-                if options.InvHR
-                    if(length(stats.HR_logrank_Inv) >= 2)
-                    for(k = 1:length(stats.HR_logrank_Inv))
-                        txt_str(k+1) = {sprintf('HR %s/%s = %.2f (%.2f - %.2f)',DATA.GROUPS(k).GroupName{1}(1),DATA.GROUPS(k+1).GroupName{1}(1), stats.HR_logrank_Inv(k), stats.HR_95_CI_logrank_Inv(k,1), stats.HR_95_CI_logrank_Inv(k,2))};
-                    end
-                    else
-                        txt_str(2) = {sprintf('HR = %.2f (%.2f - %.2f)',stats.HR_logrank_Inv, stats.HR_95_CI_logrank_Inv(1), stats.HR_95_CI_logrank_Inv(2))};
-                    end
-                else
-                    for(k = 1:length(stats.HR_logrank))
-                        txt_str(k+1) = {sprintf('HR = %.2f (%.2f - %.2f)',stats.HR_logrank(k), stats.HR_95_CI_logrank(k,1), stats.HR_95_CI_logrank(k,2))};
-                    end
-                end
-                
-            else
-                if options.InvHR
-                    for(k = 1:length(stats.HR_logrank_Inv))
-                        txt_str(k+1) = {sprintf('HR %s/%s = %.2f (%.2f - %.2f)',DATA.GROUPS(k).GroupName{1}(1),DATA.GROUPS(k+1).GroupName{1}(1), stats.HR_MH_Inv(k), stats.HR_95_CI_MH_Inv(k,1), stats.HR_95_CI_MH_Inv(k,2))};
-                    end
-                else
-                    for(k = 1:length(stats.HR_logrank_Inv))
-                        txt_str(k+1) = {sprintf('HR %s/%s = %.2f (%.2f - %.2f)',DATA.GROUPS(k).GroupName{1}(1),DATA.GROUPS(k+1).GroupName{1}(1), stats.HR_MH(k), stats.HR_95_CI_MH(k,1), stats.HR_95_CI_MH(k,2))};
-                    end
-                end
-            end
-        end
-        text(axh_KM,Nudge_X,0.15,txt_str,'FontSize',options.BaseFontSize + options.PvalFontSize,'tag','p-value')
+        txt_str(1) = {sprintf('p = %.2g',p)};    
+    else
+        txt_str = {};
     end
+    if options.DispHR
+        if options.Use_HR_MH
+            use_type = 'MH';
+        else
+            use_type = 'logrank';
+        end
+        if options.InvHR
+            inv_flag = '_Inv';
+        else
+            inv_flag = '';
+        end
+        if(length(stats.(['HR_',use_type,inv_flag])) >= 2)
+            for(k = 1:length(stats.(['HR_',use_type,inv_flag])))
+                txt_str(end+1) = {sprintf('HR {\\color[rgb]{%.5f, %.5f, %.5f}%d}/{\\color[rgb]{%.5f %.5f %.5f}%d} = %.2f (%.2f - %.2f)',cMAP(k,1),cMAP(k,2),cMAP(k,3),k,cMAP(k+1,1),cMAP(k+1,2),cMAP(k+1,3), k+1,stats.(['HR_',use_type,inv_flag])(k), stats.(['HR_95_CI_',use_type,inv_flag])(k,1), stats.(['HR_95_CI_',use_type,inv_flag])(k,2))};
+            end
+        else
+            txt_str(end+1) = {sprintf('HR = %.2f (%.2f - %.2f)',stats.(['HR_',use_type,inv_flag]), stats.(['HR_95_CI_',use_type,inv_flag])(1), stats.(['HR_95_CI_',use_type,inv_flag])(2))};
+        end
+    end            
+%         else
+%             if options.InvHR                
+%                 for(k = 1:length(stats.HR_logrank_Inv))
+%                     txt_str(end+1) = {sprintf('HR %s/%s = %.2f (%.2f - %.2f)',DATA.GROUPS(k).GroupName{1}(1),DATA.GROUPS(k+1).GroupName{1}(1), stats.HR_MH_Inv(k), stats.HR_95_CI_MH_Inv(k,1), stats.HR_95_CI_MH_Inv(k,2))};
+%                 end
+%             else
+%                 for(k = 1:length(stats.HR_logrank_Inv))
+%                     txt_str(end+1) = {sprintf('HR %s/%s = %.2f (%.2f - %.2f)',DATA.GROUPS(k).GroupName{1}(1),DATA.GROUPS(k+1).GroupName{1}(1), stats.HR_MH(k), stats.HR_95_CI_MH(k,1), stats.HR_95_CI_MH(k,2))};
+%                 end
+%             end
+%             if options.InvHR                                
+%                 for(k = 1:length(stats.HR_logrank_Inv))
+%                     txt_str(end+1) = {sprintf('HR \\color[rgb]{%.2f, %.2f, %.2f}%d/\\color[rgb]{%.2f %.2f %.2f}%d = %.2f (%.2f - %.2f)',k,cMAP(k,1),cMAP(k,2),cMAP(k,3), k+1,cMAP(k+1,1),cMAP(k+1,1),cMAP(k+1,1),stats.HR_MH_Inv(k), stats.HR_95_CI_MH_Inv(k,1), stats.HR_95_CI_MH_Inv(k,2))};
+%                 end
+%             else
+%                 for(k = 1:length(stats.HR_logrank_Inv))
+%                     txt_str(end+1) = {sprintf('HR \\color[rgb]{%.2f, %.2f, %.2f}%d/\\color[rgb]{%.2f %.2f %.2f}%d = %.2f (%.2f - %.2f)',k,cMAP(k,1),cMAP(k,2),cMAP(k,3), k+1,cMAP(k+1,1),cMAP(k+1,1),cMAP(k+1,1), stats.HR_MH(k), stats.HR_95_CI_MH(k,1), stats.HR_95_CI_MH(k,2))};
+%                 end
+%             end
+% 
+%         end
+%     end
+    text(axh_KM,Nudge_X,0.06*length(txt_str) + 0.015,txt_str,'FontSize',options.BaseFontSize + options.PvalFontSize,'tag','p-value','interpreter','tex')
     
     % And now to the Risk table
     if ~options.NoRiskTable
@@ -612,6 +630,7 @@ p.addParameter('BaseFontSize',16);
 
 
 % KM plot options
+p.addParameter('CensorMarks',true)
 p.addParameter('DispP',1);
 p.addParameter('DispHR',1);
 p.addParameter('Use_HR_MH',0);
