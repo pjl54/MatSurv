@@ -452,7 +452,7 @@ else % Creat KM-Plot
     axh_KM.XAxis.MinorTickValues = XMinorStep:XMinorStep:axh_KM.XTick(end);
     axh_KM.LineWidth = 1.5;
     
-    if options.DispP
+    if options.DispP && length(DATA.GROUPS)==2
         txt_str(1) = {sprintf('p = %.2g',p)};    
     else
         txt_str = {};
